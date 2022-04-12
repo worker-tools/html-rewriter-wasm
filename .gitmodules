@@ -1,0 +1,3 @@
+[submodule "wasm-pack"]
+	path = wasm-pack
+	url = git@github.com:worker-tools/wasm-pack.git
