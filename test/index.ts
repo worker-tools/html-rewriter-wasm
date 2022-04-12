@@ -1,14 +1,15 @@
-import { TextEncoder, TextDecoder } from "util";
-import { Macro } from "ava";
 import {
+  default as init,
   Comment,
-  DocumentHandlers,
   Element,
-  ElementHandlers,
   HTMLRewriter as RawHTMLRewriter,
-  HTMLRewriterOptions as RawHTMLRewriterOptions,
   TextChunk,
-} from "..";
+} from "../html_rewriter.js";
+import type {
+  DocumentHandlers,
+  ElementHandlers,
+  HTMLRewriterOptions as RawHTMLRewriterOptions,
+} from "../html_rewriter.d.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -16,8 +17,20 @@ const decoder = new TextDecoder();
 export class HTMLRewriter {
   private elementHandlers: [selector: string, handlers: ElementHandlers][] = [];
   private documentHandlers: DocumentHandlers[] = [];
+  private promise: Promise<WebAssembly.Exports>;
 
-  constructor(private readonly options?: RawHTMLRewriterOptions) {}
+  constructor(private readonly options?: RawHTMLRewriterOptions) {
+    this.promise = init((async () => {
+      const x = await Deno.open('./html_rewriter_bg.wasm', { read: true })
+      const r = new Response(x.readable, { 
+        headers: { 
+          'content-type': 'application/wasm',
+          // 'content-length': '' + (await x.stat()).size,
+        }, 
+      });
+      return r;
+    })())
+  }
 
   on(selector: string, handlers: ElementHandlers): this {
     this.elementHandlers.push([selector, handlers]);
@@ -30,8 +43,10 @@ export class HTMLRewriter {
   }
 
   async transform(input: string): Promise<string> {
+    await this.promise;
+
     let output = "";
-    const rewriter = new RawHTMLRewriter((chunk) => {
+    const rewriter = new RawHTMLRewriter((chunk: any) => {
       output += decoder.decode(chunk);
     }, this.options);
     for (const [selector, handlers] of this.elementHandlers) {
@@ -50,57 +65,4 @@ export class HTMLRewriter {
   }
 }
 
-export function wait(t: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, t));
-}
-
-export const mutationsMacro: Macro<
-  [
-    (
-      rw: HTMLRewriter,
-      handler: (token: Element | TextChunk | Comment) => void
-    ) => HTMLRewriter,
-    string,
-    {
-      beforeAfter: string;
-      replace: string;
-      replaceHtml: string;
-      remove: string;
-    }
-  ]
-> = async (t, func, input, expected) => {
-  // In all these tests, only process text chunks containing text. All test
-  // inputs for text handlers will be single characters, so we'll only process
-  // text nodes once.
-
-  // before/after
-  let res = await func(new HTMLRewriter(), (token) => {
-    if ("text" in token && !token.text) return;
-    token.before("<span>before</span>");
-    token.before("<span>before html</span>", { html: true });
-    token.after("<span>after</span>");
-    token.after("<span>after html</span>", { html: true });
-  }).transform(input);
-  t.is(res, expected.beforeAfter);
-
-  // replace
-  res = await func(new HTMLRewriter(), (token) => {
-    if ("text" in token && !token.text) return;
-    token.replace("<span>replace</span>");
-  }).transform(input);
-  t.is(res, expected.replace);
-  res = await func(new HTMLRewriter(), (token) => {
-    if ("text" in token && !token.text) return;
-    token.replace("<span>replace</span>", { html: true });
-  }).transform(input);
-  t.is(res, expected.replaceHtml);
-
-  // remove
-  res = await func(new HTMLRewriter(), (token) => {
-    if ("text" in token && !token.text) return;
-    t.false(token.removed);
-    token.remove();
-    t.true(token.removed);
-  }).transform(input);
-  t.is(res, expected.remove);
-};
+export const timeout = (t: number) => new Promise(r => setTimeout(r, t));

@@ -12,7 +12,7 @@ if [[ ! $WASM_PACK_VERSION =~ -asyncify$ ]]; then
 fi
 
 echo "---> Building WebAssembly with wasm-pack..."
-wasm-pack build --target nodejs
+wasm-pack build --target web
 
 echo "---> Patching JavaScript glue code..."
 # Wraps write/end with asyncify magic and adds this returns for chaining
