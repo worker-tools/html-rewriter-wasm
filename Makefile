@@ -18,6 +18,3 @@ dist: patch
 	cp pkg/html_rewriter_bg.wasm .
 	cp src/asyncify.js .
 	cp src/html_rewriter.d.ts .
-
-test:
-	deno test test
