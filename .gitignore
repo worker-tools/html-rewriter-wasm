@@ -1,5 +1,6 @@
-.DS_Store
-.idea
-dist
-node_modules
-target
+/pkg
+/npm
+/target
+/html_rewriter*
+/asyncify.js
+*.log
