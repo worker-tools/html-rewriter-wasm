@@ -11,6 +11,7 @@ wasm-pack: wasm-pack-build
 patch: wasm-pack
 	@echo "---> Patching JavaScript glue code..."
 	patch -uN pkg/html_rewriter.js < patches/html_rewriter.js.patch
+	patch -uN pkg/html_rewriter.js < patches/remove_url.patch
 
 dist: patch
 	@echo "---> Copying required files to root..."

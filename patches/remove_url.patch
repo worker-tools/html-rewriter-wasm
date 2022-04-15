@@ -1,0 +1,11 @@
+--- html_rewriter.js	2022-04-13 19:17:16.000000000 +0700
++++ html_rewriter_x.js	2022-04-15 10:50:01.000000000 +0700
+@@ -819,7 +819,7 @@
+ 
+ async function init(input) {
+     if (typeof input === 'undefined') {
+-        input = new URL('html_rewriter_bg.wasm', import.meta.url);
++        throw new Error('Initializing html_rewriter needs input')
+     }
+     const imports = {};
+     imports.wbg = {};
