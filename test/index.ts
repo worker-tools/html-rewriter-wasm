@@ -21,7 +21,7 @@ export class HTMLRewriter {
 
   constructor(private readonly options?: RawHTMLRewriterOptions) {
     this.promise = init((async () => {
-      const x = await Deno.open('./html_rewriter_bg.wasm', { read: true })
+      const x = await Deno.open(new URL('../html_rewriter_bg.wasm', import.meta.url), { read: true })
       const r = new Response(x.readable, { 
         headers: { 
           'content-type': 'application/wasm',
