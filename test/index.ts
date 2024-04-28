@@ -1,9 +1,6 @@
 import {
   default as init,
-  Comment,
-  Element,
   HTMLRewriter as RawHTMLRewriter,
-  TextChunk,
 } from "../html_rewriter.js";
 import type {
   DocumentHandlers,

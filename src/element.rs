@@ -1,7 +1,7 @@
 use super::end_tag::EndTag;
 use super::handlers::{await_promise, make_handler, HandlerJsErrorWrap};
 use super::*;
-use js_sys::{Function as JsFunction, Promise as JsPromise};
+use js_sys::{Function as JsFunction, Promise as JsPromise, TypeError as JsTypeError};
 use lol_html::html_content::Element as NativeElement;
 use serde_wasm_bindgen::to_value as to_js_value;
 use wasm_bindgen::JsCast;
@@ -109,9 +109,18 @@ impl Element {
     pub fn on_end_tag(&mut self, handler: JsFunction) -> Result<(), JsValue> {
         let this = JsValue::NULL;
         let stack_ptr = self.0.stack_ptr;
-        self.0
+
+        let handlers = self.0
             .get_mut()?
-            .on_end_tag(make_handler!(handler, EndTag, this, stack_ptr))
-            .into_js_result()
+            .end_tag_handlers()
+            .ok_or_else(|| JsTypeError::new("Parser error: No end tag."))?;
+
+        if handlers.is_empty() {
+            handlers.push(Box::new(make_handler!(handler, EndTag, this, stack_ptr)));
+        } else {
+            handlers[0] = Box::new(make_handler!(handler, EndTag, this, stack_ptr));
+        }
+
+        Ok(())
     }
 }
